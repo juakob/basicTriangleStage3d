@@ -105,13 +105,17 @@ class HelloTriangle extends Sprite {
 		__setActiveProgram();
 		
 		// start the rendering loop
-		addEventListener(Event.ENTER_FRAME, render);
+		#if flash
+			addEventListener(Event.ENTER_FRAME, render);
+		#else
+			context.setRenderMethod(render);
+		#end
 	}
 	
 	/**
 	 * Create the vertex and index buffers
-	 */
-	private function __createBuffers():Void {
+	 */	private function __createBuffers():Void {
+
 		// // // CREATE BUFFERS // //
 		vertexBuffer = context.createVertexBuffer(3, 6);
 		indexBuffer = context.createIndexBuffer(3);
@@ -122,15 +126,15 @@ class HelloTriangle extends Sprite {
 	 */
 	private function __uploadBuffers():Void {
 		var vertexData:Vector<Float>=Vector.ofArray([
-		-0.3, -0.3, 1, 1, 0, 0, 	// - 1st vertex x,y,z,r,g,b 
-		0, 0.3, 0, 0, 1, 0, 		// - 2nd vertex x,y,z,r,g,b 
-		0.3, -0.3, 0, 0, 0, 1		// - 3rd vertex x,y,z,r,g,b
+		-1, -1, 0, 1, 0, 0, 	// - 1st vertex x,y,z,r,g,b 
+		0, 1, 0, 0, 1, 0, 		// - 2nd vertex x,y,z,r,g,b 
+		1, -1, 0, 0, 0, 1		// - 3rd vertex x,y,z,r,g,b
 		]);
 		
 		vertexBuffer.uploadFromVector(vertexData, 0, 3);
 		var index:Vector<UInt> = new Vector();
-		index.push(1);
 		index.push(0);
+		index.push(1);
 		index.push(2);
 		indexBuffer.uploadFromVector(index, 0, 3);
 	}
