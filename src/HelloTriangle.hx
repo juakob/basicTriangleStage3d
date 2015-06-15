@@ -5,6 +5,7 @@ import openfl.display3D._shaders.AGLSLShaderUtils;
 import openfl.display3D._shaders.Shader;
 import openfl.display3D.Context3D;
 import openfl.display3D.Context3DProgramType;
+import openfl.display3D.Context3DTriangleFace;
 import openfl.display3D.Context3DVertexBufferFormat;
 import openfl.display3D.IndexBuffer3D;
 import openfl.display3D.Program3D;
@@ -199,7 +200,9 @@ class HelloTriangle extends Sprite {
 	 * Render the scene
 	 */
 	private function render(event:Event):Void {
-		context.clear(0,1,0); // Clear the backbuffer by filling it with the given color
+		context.clear(0, 1, 0); // Clear the backbuffer by filling it with the given color
+		__setActiveProgram();
+		__splitAndMakeChunkOfDataAvailableToProgram();
 		
 		context.drawTriangles(indexBuffer); // Draw the triangle according to the indexBuffer instructions into the backbuffer
 		context.present(); // render the backbuffer on screen.
