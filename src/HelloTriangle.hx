@@ -1,14 +1,18 @@
 package ;
 
+import openfl.Assets;
+import openfl.display.BitmapData;
 import openfl.display.Sprite;
 import openfl.display3D._shaders.AGLSLShaderUtils;
 import openfl.display3D._shaders.Shader;
 import openfl.display3D.Context3D;
 import openfl.display3D.Context3DProgramType;
+import openfl.display3D.Context3DTextureFormat;
 import openfl.display3D.Context3DTriangleFace;
 import openfl.display3D.Context3DVertexBufferFormat;
 import openfl.display3D.IndexBuffer3D;
 import openfl.display3D.Program3D;
+import openfl.display3D.textures.Texture;
 import openfl.display3D.VertexBuffer3D;
 import openfl.events.Event;
 import openfl.geom.Matrix3D;
@@ -46,6 +50,7 @@ class HelloTriangle extends Sprite {
 	private var vertexShader:Shader;
 	private var fragmentShader:Shader;
 
+	private var texture:Texture;
 	/**
 	 * CLASS CONSTRUCTOR
 	 */
@@ -96,10 +101,12 @@ class HelloTriangle extends Sprite {
 		// Allocation - program compilation
 		__createBuffers();
 		__createAndCompileProgram();
+		createTexture();
 		
 		// Upload program and buffers data
 		__uploadProgram();
 		__uploadBuffers();
+		uploadTexture();
 		
 		// Split chunk of data and set active program
 		__splitAndMakeChunkOfDataAvailableToProgram();
@@ -118,8 +125,13 @@ class HelloTriangle extends Sprite {
 	 */	private function __createBuffers():Void {
 
 		// // // CREATE BUFFERS // //
-		vertexBuffer = context.createVertexBuffer(3, 6);
-		indexBuffer = context.createIndexBuffer(3);
+		vertexBuffer = context.createVertexBuffer(4, 4);
+		indexBuffer = context.createIndexBuffer(6);
+	}
+	
+	private function createTexture():Void
+	{
+		texture = context.createTexture(512, 512, Context3DTextureFormat.BGRA, false);
 	}
 
 	/**
@@ -127,17 +139,21 @@ class HelloTriangle extends Sprite {
 	 */
 	private function __uploadBuffers():Void {
 		var vertexData:Vector<Float>=Vector.ofArray([
-		-1, -1, 0, 1, 0, 0, 	// - 1st vertex x,y,z,r,g,b 
-		0, 1, 0, 0, 1, 0, 		// - 2nd vertex x,y,z,r,g,b 
-		1, -1, 0, 0, 0, 1		// - 3rd vertex x,y,z,r,g,b
+		-1, 1, 0, 0, 
+		-1, -1, 0, 1, 
+		1,-1, 1, 1,
+		1, 1, 1, 0
 		]);
 		
-		vertexBuffer.uploadFromVector(vertexData, 0, 3);
+		vertexBuffer.uploadFromVector(vertexData, 0, 4);
 		var index:Vector<UInt> = new Vector();
 		index.push(0);
 		index.push(1);
 		index.push(2);
-		indexBuffer.uploadFromVector(index, 0, 3);
+		index.push(0);
+		index.push(3);
+		index.push(2);
+		indexBuffer.uploadFromVector(index, 0, 6);
 	}
 	
 	/**
@@ -148,10 +164,14 @@ class HelloTriangle extends Sprite {
 	private function __splitAndMakeChunkOfDataAvailableToProgram():Void {
 		// So here, basically, your telling your GPU that for each Vertex with a vertex being x,y,y,r,g,b
 		// you will copy in register "0", from the buffer "vertexBuffer, starting from the postion "0" the FLOAT_3 next number
-		context.setVertexBufferAt(0, vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_3); // register "0" now contains x,y,z
+		context.setVertexBufferAt(0, vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2); // register "0" now contains x,y,z
 		
 		// Here, you will copy in register "1" from "vertexBuffer", starting from index "3", the next FLOAT_3 numbers
-		context.setVertexBufferAt(1, vertexBuffer, 3, Context3DVertexBufferFormat.FLOAT_3); // register 1 now contains r,g,b
+		context.setVertexBufferAt(1, vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_2); // register 1 now contains r,g,b
+	}
+	private function setTexture():Void
+	{
+		context.setTextureAt(0, texture);
 	}
 
 	/**
@@ -173,7 +193,8 @@ class HelloTriangle extends Sprite {
 		// Compile our AGAL Code into ByteCode using the MiniAssembler 
 		vertexShader = AGLSLShaderUtils.createShader(Context3DProgramType.VERTEX, code);
 		
-		code = "mov oc, v0\n"; // Move the Variable register 0 (v0) where we copied our Vertex Color, to the output color
+		code = "tex ft1, v0, fs0 <2d>\n";
+		code+="mov oc, ft1\n"; // Move the Variable register 0 (v0) where we copied our Vertex Color, to the output color
 		
 		// Compile our AGAL Code into Bytecode using the MiniAssembler
 		fragmentShader = AGLSLShaderUtils.createShader(Context3DProgramType.FRAGMENT, code);
@@ -185,6 +206,12 @@ class HelloTriangle extends Sprite {
 	private function __uploadProgram():Void {
 		// UPLOAD TO GPU PROGRAM
 		program.upload(vertexShader, fragmentShader); // Upload the combined program to the video Ram
+	}
+	private function uploadTexture():Void
+	{
+		var bitmap:BitmapData = new BitmapData(512, 512, true, 0);
+		bitmap.draw(Assets.getBitmapData("img/openfl.png"));
+		texture.uploadFromBitmapData(bitmap);
 	}
 	
 	/**
@@ -200,9 +227,10 @@ class HelloTriangle extends Sprite {
 	 * Render the scene
 	 */
 	private function render(event:Event):Void {
-		context.clear(0, 1, 0); // Clear the backbuffer by filling it with the given color
+		context.clear(0, 0, 0); // Clear the backbuffer by filling it with the given color
 		__setActiveProgram();
 		__splitAndMakeChunkOfDataAvailableToProgram();
+		setTexture();
 		
 		context.drawTriangles(indexBuffer); // Draw the triangle according to the indexBuffer instructions into the backbuffer
 		context.present(); // render the backbuffer on screen.
